@@ -81,20 +81,22 @@
         }
 
         function handleResetMessage(msg) {
-            // Expected format: "reset-yyyy-mm-dd"
-            const match = msg.match(/^reset-(\d{4})-(\d{2})-(\d{2})$/);
+            // Expected format: "reset-yyyy-mm-dd" (mm and dd can be 1 or 2 digits)
+            const match = msg.match(/^reset-(\d{4})-(\d{1,2})-(\d{1,2})$/);
             if (!match) {
                 console.error('Invalid reset message format:', msg);
                 return;
             }
 
             const [, year, month, day] = match;
-            const resetDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const paddedMonth = String(month).padStart(2, '0');
+            const paddedDay = String(day).padStart(2, '0');
+            const resetDate = new Date(parseInt(year), parseInt(paddedMonth) - 1, parseInt(paddedDay));
             const today = new Date();
             const todayFormatted = String(today.getFullYear()) + '-' +
                                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
                                    String(today.getDate()).padStart(2, '0');
-            const resetDateFormatted = year + '-' + month + '-' + day;
+            const resetDateFormatted = year + '-' + paddedMonth + '-' + paddedDay;
 
             if (resetDateFormatted === todayFormatted) {
                 console.log('Reset code valid, resetting system');
