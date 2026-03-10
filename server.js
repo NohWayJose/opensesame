@@ -59,9 +59,12 @@ client.on('message', (topic, message) => {
   } else if (topic === 'opensesame/reset') {
     const resetMsg = message.toString();
     console.log('Received reset message:', resetMsg);
-    // Broadcast reset message to all connected SSE clients
+    // reset the counter too
+    tryCount = 0;
+    // Broadcast reset message and updated tryCount to all connected SSE clients
     clients.forEach(client => {
       client.write(`data: ${JSON.stringify({ resetMessage: resetMsg })}\n\n`);
+      client.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
     });
   } else if (topic === 'opensesame/status') {
     const statusMsg = message.toString();
