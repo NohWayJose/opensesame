@@ -31,10 +31,20 @@ let submissionCount = 0;
 let tryCount = 0;
 let clients = []; // SSE clients
 
-// Subscribe to trycount topic
+// Subscribe to trycount, reset and status topics
 client.subscribe('opensesame/trycount', (err) => {
   if (err) console.error('Subscribe error:', err);
   else console.log('Subscribed to opensesame/trycount');
+});
+
+client.subscribe('opensesame/reset', (err) => {
+  if (err) console.error('Subscribe error:', err);
+  else console.log('Subscribed to opensesame/reset');
+});
+
+client.subscribe('opensesame/status', (err) => {
+  if (err) console.error('Subscribe error:', err);
+  else console.log('Subscribed to opensesame/status');
 });
 
 client.on('message', (topic, message) => {
@@ -45,6 +55,19 @@ client.on('message', (topic, message) => {
     // Broadcast to all connected SSE clients
     clients.forEach(client => {
       client.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
+    });
+  } else if (topic === 'opensesame/reset') {
+    const resetMsg = message.toString();
+    console.log('Received reset message:', resetMsg);
+    // Broadcast reset message to all connected SSE clients
+    clients.forEach(client => {
+      client.write(`data: ${JSON.stringify({ resetMessage: resetMsg })}\n\n`);
+    });
+  } else if (topic === 'opensesame/status') {
+    const statusMsg = message.toString();
+    console.log('Received status message:', statusMsg);
+    clients.forEach(client => {
+      client.write(`data: ${JSON.stringify({ status: statusMsg })}\n\n`);
     });
   }
 });

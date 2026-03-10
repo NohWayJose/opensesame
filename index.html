@@ -8,8 +8,9 @@
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; font-size: 24px; }
         .inputs { display: flex; justify-content: center; gap: 10px; }
         input { width: 60px; height: 60px; text-align: center; font-size: 48px; }
+        input:disabled { background-color: #ccc; color: #666; cursor: not-allowed; }
         #message { margin-top: 20px; color: red; }
-        #trycount { margin-top: 20px; color: red; }
+        #trycount { margin-top: 20px; color: teal; }
     </style>
 </head>
 <body>
@@ -31,15 +32,34 @@
         const messageEl = document.getElementById('message');
         const trycountEl = document.getElementById('trycount');
 
-        // Connect to Server-Sent Events for trycount updates
+        // Connect to Server-Sent Events for trycount and reset updates
         const eventSource = new EventSource('/events');
         eventSource.onmessage = (e) => {
             const data = JSON.parse(e.data);
             if (data.tryCount !== undefined) {
-                if (data.tryCount > 0) {
+                if (data.tryCount >= 5) {
+                    messageEl.textContent = 'ring 0797 999 7237';
+                    disableInputs(true);
+                    trycountEl.textContent = 'Attempts made: ' + data.tryCount;
+                } else if (data.tryCount > 0) {
                     trycountEl.textContent = 'Attempts made: ' + data.tryCount;
                 } else {
                     trycountEl.textContent = '';
+                    messageEl.textContent = '';
+                    messageEl.style.color = 'red';
+                }
+            }
+            if (data.resetMessage !== undefined) {
+                handleResetMessage(data.resetMessage);
+            }
+            if (data.status !== undefined) {
+                if (data.status === 'OK') {
+                    messageEl.textContent = 'box opened - please deposit parcel & close box firmly';
+                    messageEl.style.color = 'green';
+                    disableInputs(true);
+                } else {
+                    // any other status could reset message color
+                    messageEl.style.color = 'red';
                 }
             }
         };
@@ -48,7 +68,47 @@
             eventSource.close();
         };
 
+        function disableInputs(disabled) {
+            inputs.forEach(i => {
+                i.disabled = disabled;
+                if (!disabled) {
+                    i.value = '';
+                }
+            });
+            if (!disabled) {
+                focusAndSelect(inputs[0]);
+            }
+        }
+
+        function handleResetMessage(msg) {
+            // Expected format: "reset-dd-mm-yyyy"
+            const match = msg.match(/^reset-(\d{2})-(\d{2})-(\d{4})$/);
+            if (!match) {
+                console.error('Invalid reset message format:', msg);
+                return;
+            }
+
+            const [, day, month, year] = match;
+            const resetDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const today = new Date();
+            const todayFormatted = String(today.getDate()).padStart(2, '0') + '-' +
+                                   String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                                   String(today.getFullYear());
+            const resetDateFormatted = day + '-' + month + '-' + year;
+
+            if (resetDateFormatted === todayFormatted) {
+                console.log('Reset code valid, resetting system');
+                disableInputs(false);
+                trycountEl.textContent = '';
+                messageEl.textContent = '';
+                messageEl.style.color = 'red';
+            } else {
+                console.error('Reset code date does not match today:', resetDateFormatted, 'vs', todayFormatted);
+            }
+        }
+
         function focusAndSelect(el) {
+            if (el.disabled) return; // prevent focus on disabled inputs
             el.focus();
             el.select();
         }
@@ -58,9 +118,14 @@
 
         inputs.forEach(i => {
             // ensure any pre-filled character is selected when the field gains focus
-            i.addEventListener('focus', () => focusAndSelect(i));
+            i.addEventListener('focus', () => {
+                if (!i.disabled) {
+                    focusAndSelect(i);
+                }
+            });
 
             i.addEventListener('keydown', e => {
+                if (i.disabled) return; // prevent input when disabled
                 switch (e.key) {
                     case 'Backspace':
                         if (i.value === '') {
@@ -118,7 +183,7 @@
         }
 
         function next(el) {
-            if (!el.value) return; // nothing to do on empty input
+            if (el.disabled || !el.value) return; // nothing to do on empty input or disabled field
 
             const nxt = el.nextElementSibling;
             if (nxt && nxt.tagName === 'INPUT') {
