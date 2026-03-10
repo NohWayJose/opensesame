@@ -28,6 +28,40 @@ client.on('error', (err) => {
 });
 
 let submissionCount = 0;
+let tryCount = 0;
+let clients = []; // SSE clients
+
+// Subscribe to trycount topic
+client.subscribe('opensesame/trycount', (err) => {
+  if (err) console.error('Subscribe error:', err);
+  else console.log('Subscribed to opensesame/trycount');
+});
+
+client.on('message', (topic, message) => {
+  if (topic === 'opensesame/trycount') {
+    const count = parseInt(message.toString());
+    tryCount = count;
+    console.log('Received trycount:', tryCount);
+    // Broadcast to all connected SSE clients
+    clients.forEach(client => {
+      client.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
+    });
+  }
+});
+
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  // Send current count immediately
+  res.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
+  // Add to clients list
+  clients.push(res);
+  // Remove on disconnect
+  req.on('close', () => {
+    clients = clients.filter(c => c !== res);
+  });
+});
 
 app.post('/submit', (req, res) => {
   const code = req.body.code;
@@ -37,7 +71,7 @@ app.post('/submit', (req, res) => {
       console.log('Not connected to MQTT, waiting...');
       return res.json({ message: 'System not ready, try again' });
     }
-    client.publish('opensesame', code, (err) => {
+    client.publish('opensesame/code', code, (err) => {
       if (err) {
         console.error('Publish error:', err);
         res.json({ message: 'Error publishing code' });

@@ -9,6 +9,7 @@
         .inputs { display: flex; justify-content: center; gap: 10px; }
         input { width: 60px; height: 60px; text-align: center; font-size: 48px; }
         #message { margin-top: 20px; color: red; }
+        #trycount { margin-top: 20px; color: red; }
     </style>
 </head>
 <body>
@@ -24,8 +25,28 @@
         <input id="6" maxlength="1">
     </div>
     <div id="message"></div>
+    <div id="trycount"></div>
     <script>
         const inputs = document.querySelectorAll('.inputs input');
+        const messageEl = document.getElementById('message');
+        const trycountEl = document.getElementById('trycount');
+
+        // Connect to Server-Sent Events for trycount updates
+        const eventSource = new EventSource('/events');
+        eventSource.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.tryCount !== undefined) {
+                if (data.tryCount > 0) {
+                    trycountEl.textContent = 'Attempts made: ' + data.tryCount;
+                } else {
+                    trycountEl.textContent = '';
+                }
+            }
+        };
+        eventSource.onerror = () => {
+            console.error('EventSource error');
+            eventSource.close();
+        };
 
         function focusAndSelect(el) {
             el.focus();
@@ -83,7 +104,6 @@
             })
             .then(r => r.json())
             .then(d => {
-                const messageEl = document.getElementById('message');
                 if (d.message) {
                     messageEl.textContent = d.message;
                 } else {
@@ -93,7 +113,7 @@
             })
             .catch(err => {
                 console.error('Fetch error:', err);
-                document.getElementById('message').textContent = 'Network error - try again';
+                messageEl.textContent = 'Network error - try again';
             });
         }
 
