@@ -37,12 +37,14 @@
         eventSource.onmessage = (e) => {
             const data = JSON.parse(e.data);
             if (data.tryCount !== undefined) {
+                console.log('SSE tryCount', data.tryCount);
+                let displayCount = Math.min(data.tryCount, 5);
                 if (data.tryCount >= 5) {
                     messageEl.textContent = 'ring 0797 999 7237';
                     disableInputs(true);
-                    trycountEl.textContent = 'Attempts made: ' + data.tryCount;
+                    trycountEl.textContent = 'Attempts made: ' + displayCount;
                 } else if (data.tryCount >= 0) {
-                    trycountEl.textContent = 'Attempts made: ' + data.tryCount;
+                    trycountEl.textContent = 'Attempts made: ' + displayCount;
                 } else {
                     trycountEl.textContent = '';
                     messageEl.textContent = '';
@@ -101,6 +103,7 @@
             if (resetDateFormatted === todayFormatted) {
                 console.log('Reset code valid, resetting system');
                 disableInputs(false);
+                trycountEl.textContent = 'Attempts made: 0';
                 messageEl.textContent = '';
                 messageEl.style.color = 'red';
             } else {

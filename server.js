@@ -54,7 +54,8 @@ client.on('message', (topic, message) => {
     console.log('Received trycount:', tryCount);
     // Broadcast to all connected SSE clients
     clients.forEach(client => {
-      client.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
+      const out = Math.min(tryCount, 5);
+      client.write(`data: ${JSON.stringify({ tryCount: out })}\n\n`);
     });
   } else if (topic === 'opensesame/reset') {
     const resetMsg = message.toString();
@@ -64,7 +65,8 @@ client.on('message', (topic, message) => {
     // Broadcast reset message and updated tryCount to all connected SSE clients
     clients.forEach(client => {
       client.write(`data: ${JSON.stringify({ resetMessage: resetMsg })}\n\n`);
-      client.write(`data: ${JSON.stringify({ tryCount })}\n\n`);
+      const out = Math.min(tryCount, 5);
+      client.write(`data: ${JSON.stringify({ tryCount: out })}\n\n`);
     });
   } else if (topic === 'opensesame/status') {
     const statusMsg = message.toString();
