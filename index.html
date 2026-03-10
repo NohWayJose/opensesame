@@ -16,37 +16,99 @@
     <p>Please enter the six-character code to open the delivery box:</p>
     <p>You only get five chances. Please shut the lid firmly when you've deposited the delivery </p>
     <div class="inputs">
-        <input id="1" maxlength="1" oninput="next(this)">
-        <input id="2" maxlength="1" oninput="next(this)">
-        <input id="3" maxlength="1" oninput="next(this)">
-        <input id="4" maxlength="1" oninput="next(this)">
-        <input id="5" maxlength="1" oninput="next(this)">
-        <input id="6" maxlength="1" oninput="next(this)">
+        <input id="1" maxlength="1">
+        <input id="2" maxlength="1">
+        <input id="3" maxlength="1">
+        <input id="4" maxlength="1">
+        <input id="5" maxlength="1">
+        <input id="6" maxlength="1">
     </div>
     <div id="message"></div>
     <script>
-        document.getElementById('1').focus();
+        const inputs = document.querySelectorAll('.inputs input');
+
+        function focusAndSelect(el) {
+            el.focus();
+            el.select();
+        }
+
+        // initialize focus on first field
+        focusAndSelect(inputs[0]);
+
+        inputs.forEach(i => {
+            // ensure any pre-filled character is selected when the field gains focus
+            i.addEventListener('focus', () => focusAndSelect(i));
+
+            i.addEventListener('keydown', e => {
+                switch (e.key) {
+                    case 'Backspace':
+                        if (i.value === '') {
+                            const prev = i.previousElementSibling;
+                            if (prev && prev.tagName === 'INPUT') {
+                                e.preventDefault();
+                                prev.value = '';
+                                focusAndSelect(prev);
+                            }
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        {
+                            const prev = i.previousElementSibling;
+                            if (prev && prev.tagName === 'INPUT') {
+                                e.preventDefault();
+                                focusAndSelect(prev);
+                            }
+                        }
+                        break;
+                    case 'ArrowRight':
+                        {
+                            const nxt = i.nextElementSibling;
+                            if (nxt && nxt.tagName === 'INPUT') {
+                                e.preventDefault();
+                                focusAndSelect(nxt);
+                            }
+                        }
+                        break;
+                }
+            });
+
+            i.addEventListener('input', () => next(i));
+        });
+
+        function submitCode(code) {
+            fetch('/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(r => r.json())
+            .then(d => {
+                const messageEl = document.getElementById('message');
+                if (d.message) {
+                    messageEl.textContent = d.message;
+                } else {
+                    inputs.forEach(i => i.value = '');
+                    focusAndSelect(inputs[0]);
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                document.getElementById('message').textContent = 'Network error - try again';
+            });
+        }
+
         function next(el) {
-            const inputs = document.querySelectorAll('input');
-            const index = Array.from(inputs).indexOf(el);
-            if (el.value && index < inputs.length - 1) {
-                inputs[index + 1].focus();
-            } else if (index === inputs.length - 1 && el.value) {
-                const code = Array.from(inputs).map(i => i.value).join('');
-                fetch('/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
-                })
-                .then(r => r.json())
-                .then(d => {
-                    if (d.message) {
-                        document.getElementById('message').textContent = d.message;
-                    } else {
-                        inputs.forEach(i => i.value = '');
-                        document.getElementById('1').focus();
-                    }
-                });
+            if (!el.value) return; // nothing to do on empty input
+
+            const nxt = el.nextElementSibling;
+            if (nxt && nxt.tagName === 'INPUT') {
+                focusAndSelect(nxt);
+                return;
+            }
+
+            const code = Array.from(inputs).map(i => i.value).join('');
+            if (code.length === inputs.length) {
+                submitCode(code);
             }
         }
     </script>
