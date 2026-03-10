@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Sesame</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; font-size: 24px; }
+        .inputs { display: flex; justify-content: center; gap: 10px; }
+        input { width: 60px; height: 60px; text-align: center; font-size: 48px; }
+        #message { margin-top: 20px; color: red; }
+    </style>
+</head>
+<body>
+    <h1>61 Archery Grove - Open Sesame</h1>
+    <p>Please enter the six-character code to open the delivery box:</p>
+    <p>You only get five chances. Please shut the lid firmly when you've deposited the delivery </p>
+    <div class="inputs">
+        <input id="1" maxlength="1" oninput="next(this)">
+        <input id="2" maxlength="1" oninput="next(this)">
+        <input id="3" maxlength="1" oninput="next(this)">
+        <input id="4" maxlength="1" oninput="next(this)">
+        <input id="5" maxlength="1" oninput="next(this)">
+        <input id="6" maxlength="1" oninput="next(this)">
+    </div>
+    <div id="message"></div>
+    <script>
+        document.getElementById('1').focus();
+        function next(el) {
+            const inputs = document.querySelectorAll('input');
+            const index = Array.from(inputs).indexOf(el);
+            if (el.value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            } else if (index === inputs.length - 1 && el.value) {
+                const code = Array.from(inputs).map(i => i.value).join('');
+                fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.message) {
+                        document.getElementById('message').textContent = d.message;
+                    } else {
+                        inputs.forEach(i => i.value = '');
+                        document.getElementById('1').focus();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
