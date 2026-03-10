@@ -41,7 +41,7 @@
                     messageEl.textContent = 'ring 0797 999 7237';
                     disableInputs(true);
                     trycountEl.textContent = 'Attempts made: ' + data.tryCount;
-                } else if (data.tryCount > 0) {
+                } else if (data.tryCount >= 0) {
                     trycountEl.textContent = 'Attempts made: ' + data.tryCount;
                 } else {
                     trycountEl.textContent = '';
