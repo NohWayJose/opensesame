@@ -65,7 +65,7 @@
         };
         eventSource.onerror = () => {
             console.error('EventSource error');
-            eventSource.close();
+            // Remove close() to allow automatic reconnection
         };
 
         function disableInputs(disabled) {
