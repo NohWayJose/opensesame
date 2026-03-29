@@ -1,205 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Sesame</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; font-size: 24px; }
-        .inputs { display: flex; justify-content: center; gap: 10px; }
-        input { width: 60px; height: 60px; text-align: center; font-size: 48px; }
-        input:disabled { background-color: #ccc; color: #666; cursor: not-allowed; }
-        #message { margin-top: 20px; color: red; }
-        #trycount { margin-top: 20px; color: teal; }
-    </style>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Open Sesame</title>
+	<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>61 Archery Grove - Open Sesame</h1>
-    <p>Please enter the six-character code to open the delivery box:</p>
-    <p>You only get five chances. Please shut the lid firmly when you've deposited the delivery </p>
-    <div class="inputs">
-        <input id="1" maxlength="1">
-        <input id="2" maxlength="1">
-        <input id="3" maxlength="1">
-        <input id="4" maxlength="1">
-        <input id="5" maxlength="1">
-        <input id="6" maxlength="1">
-    </div>
-    <div id="message"></div>
-    <div id="trycount"></div>
-    <script>
-        const inputs = document.querySelectorAll('.inputs input');
-        const messageEl = document.getElementById('message');
-        const trycountEl = document.getElementById('trycount');
+	<main aria-labelledby="opensesame-title">
+		<h1 id="opensesame-title">61 Archery Grove</h1>
+		<p>
+			Enter the six-character code to open the delivery box. You have five attempts.
+		</p>
 
-        // Connect to Server-Sent Events for trycount and reset updates
-        const eventSource = new EventSource('/events');
-        eventSource.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.tryCount !== undefined) {
-                console.log('SSE tryCount', data.tryCount);
-                let displayCount = Math.min(data.tryCount, 5);
-                if (data.tryCount >= 5) {
-                    messageEl.textContent = 'ring 0797 999 7237';
-                    disableInputs(true);
-                    trycountEl.textContent = 'Attempts made: ' + displayCount;
-                } else if (data.tryCount >= 0) {
-                    trycountEl.textContent = 'Attempts made: ' + displayCount;
-                } else {
-                    trycountEl.textContent = '';
-                    messageEl.textContent = '';
-                    messageEl.style.color = 'red';
-                }
-            }
-            if (data.resetMessage !== undefined) {
-                handleResetMessage(data.resetMessage);
-            }
-            if (data.status !== undefined) {
-                if (data.status === 'OK') {
-                    messageEl.textContent = 'box opened - please deposit parcel & close box firmly';
-                    messageEl.style.color = 'green';
-                    disableInputs(true);
-                } else {
-                    // any other status could reset message color
-                    messageEl.style.color = 'red';
-                }
-            }
-        };
-        eventSource.onerror = () => {
-            console.error('EventSource error');
-            // Remove close() to allow automatic reconnection
-        };
+		<div class="inputs" aria-label="Access code entry">
+			<input maxlength="1" inputmode="text" aria-label="Code character 1">
+			<input maxlength="1" inputmode="text" aria-label="Code character 2">
+			<input maxlength="1" inputmode="text" aria-label="Code character 3">
+			<input maxlength="1" inputmode="text" aria-label="Code character 4">
+			<input maxlength="1" inputmode="text" aria-label="Code character 5">
+			<input maxlength="1" inputmode="text" aria-label="Code character 6">
+		</div>
 
-        function disableInputs(disabled) {
-            inputs.forEach(i => {
-                i.disabled = disabled;
-                if (!disabled) {
-                    i.value = '';
-                }
-            });
-            if (!disabled) {
-                focusAndSelect(inputs[0]);
-            }
-        }
+		<div id="message" aria-live="polite"></div>
+		<div id="trycount" aria-live="polite"></div>
+	</main>
 
-        function handleResetMessage(msg) {
-            // Expected format: "reset-yyyy-mm-dd" (mm and dd can be 1 or 2 digits)
-            const match = msg.match(/^reset-(\d{4})-(\d{1,2})-(\d{1,2})$/);
-            if (!match) {
-                console.error('Invalid reset message format:', msg);
-                return;
-            }
-
-            const [, year, month, day] = match;
-            const paddedMonth = String(month).padStart(2, '0');
-            const paddedDay = String(day).padStart(2, '0');
-            const resetDate = new Date(parseInt(year), parseInt(paddedMonth) - 1, parseInt(paddedDay));
-            const today = new Date();
-            const todayFormatted = String(today.getFullYear()) + '-' +
-                                   String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                                   String(today.getDate()).padStart(2, '0');
-            const resetDateFormatted = year + '-' + paddedMonth + '-' + paddedDay;
-
-            if (resetDateFormatted === todayFormatted) {
-                console.log('Reset code valid, resetting system');
-                disableInputs(false);
-                trycountEl.textContent = 'Attempts made: 0';
-                messageEl.textContent = '';
-                messageEl.style.color = 'red';
-            } else {
-                console.error('Reset code date does not match today:', resetDateFormatted, 'vs', todayFormatted);
-            }
-        }
-
-        function focusAndSelect(el) {
-            if (el.disabled) return; // prevent focus on disabled inputs
-            el.focus();
-            el.select();
-        }
-
-        // initialize focus on first field
-        focusAndSelect(inputs[0]);
-
-        inputs.forEach(i => {
-            // ensure any pre-filled character is selected when the field gains focus
-            i.addEventListener('focus', () => {
-                if (!i.disabled) {
-                    focusAndSelect(i);
-                }
-            });
-
-            i.addEventListener('keydown', e => {
-                if (i.disabled) return; // prevent input when disabled
-                switch (e.key) {
-                    case 'Backspace':
-                        if (i.value === '') {
-                            const prev = i.previousElementSibling;
-                            if (prev && prev.tagName === 'INPUT') {
-                                e.preventDefault();
-                                prev.value = '';
-                                focusAndSelect(prev);
-                            }
-                        }
-                        break;
-                    case 'ArrowLeft':
-                        {
-                            const prev = i.previousElementSibling;
-                            if (prev && prev.tagName === 'INPUT') {
-                                e.preventDefault();
-                                focusAndSelect(prev);
-                            }
-                        }
-                        break;
-                    case 'ArrowRight':
-                        {
-                            const nxt = i.nextElementSibling;
-                            if (nxt && nxt.tagName === 'INPUT') {
-                                e.preventDefault();
-                                focusAndSelect(nxt);
-                            }
-                        }
-                        break;
-                }
-            });
-
-            i.addEventListener('input', () => next(i));
-        });
-
-        function submitCode(code) {
-            fetch('/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
-            })
-            .then(r => r.json())
-            .then(d => {
-                if (d.message) {
-                    messageEl.textContent = d.message;
-                } else {
-                    inputs.forEach(i => i.value = '');
-                    focusAndSelect(inputs[0]);
-                }
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                messageEl.textContent = 'Network error - try again';
-            });
-        }
-
-        function next(el) {
-            if (el.disabled || !el.value) return; // nothing to do on empty input or disabled field
-
-            const nxt = el.nextElementSibling;
-            if (nxt && nxt.tagName === 'INPUT') {
-                focusAndSelect(nxt);
-                return;
-            }
-
-            const code = Array.from(inputs).map(i => i.value).join('');
-            if (code.length === inputs.length) {
-                submitCode(code);
-            }
-        }
-    </script>
+	<script src="/app.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,21 @@
+[Unit]
+Description=Open Sesame Node backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nginx
+Group=nginx
+WorkingDirectory=/srv/www/htdocs/opensesame
+ExecStart=/usr/bin/node /srv/www/htdocs/opensesame/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
